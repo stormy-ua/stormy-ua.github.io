@@ -1,0 +1,203 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Stormy-ua.GitHub.io by stormy-ua</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <meta name="viewport" content="width=device-width">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Stormy-ua.GitHub.io</h1>
+        <p></p>
+
+
+        <p class="view"><a href="https://github.com/stormy-ua">View My GitHub Profile</a></p>
+
+      </header>
+      <section>
+        <h1>
+<a id="deep-learning-toy" class="anchor" href="#deep-learning-toy" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Deep Learning Toy</h1>
+
+<p><img src="https://raw.githubusercontent.com/stormy-ua/DeepLearningToy/master/logo.jpg" alt="alt text"></p>
+
+<blockquote>
+<p>Lightweight deep learning library implemented in Python. Designed for studying how contemporary deep learning libraries are implemented.</p>
+</blockquote>
+
+<p><a href="https://travis-ci.org/stormy-ua/DeepLearningToy"><img src="https://travis-ci.org/stormy-ua/DeepLearningToy.svg?branch=master" alt="Build Status"></a>
+<a href="https://pypi.python.org/pypi/pydeeptoy"><img src="https://img.shields.io/pypi/v/nine.svg?maxAge=2592000" alt="PyPI"></a></p>
+
+<h2>
+<a id="architecture" class="anchor" href="#architecture" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Architecture</h2>
+
+<p>There are several core ideas used by the framework: <a href="http://colah.github.io/posts/2015-08-Backprop/">computational graph</a>, forward propagation, <a href="https://en.wikipedia.org/wiki/Loss_function">loss/cost function</a>, <a href="https://en.wikipedia.org/wiki/Gradient_descent">gradient descent</a>, and <a href="http://neuralnetworksanddeeplearning.com/chap2.html">backward propagation</a>.
+<em>Computational graph</em> is a graph representing ordered set of primitive algeabric operations. Forward propagation feeds an input into a computational graph and produces the output. <em>Loss function</em> is a metric measuring how well a model estimates class or a value based on the input; usually, a loss function produces a scalar value. <em>Gradient descent</em> is the calculus approach for a loss function minimization. It uses the simple idea that in order to minimize a function we have to follow a path directed by its variables gradients. <em>Backward propagation</em> takes a graph in the state after forward propagation had finished, and calculates gradients starting from the output towards the input; this direction from the head of the computational graph towards the tail is the result of the calculus chain rule.</p>
+
+<h2>
+<a id="computational-graph" class="anchor" href="#computational-graph" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Computational Graph</h2>
+
+<p><a href="../master/src/pydeeptoy/computational_graph.py">ComputationalGraph</a> class is equipped with methods representing primitive algeabric operations. Each method takes an input and produces an output. Inputs and outputs are represented by the <a href="../master/src/pydeeptoy/nodes.py">Connection</a> class, and operations by the <a href="../master/src/pydeeptoy/nodes.py">Node</a> class. There are two types of connections: constants and variables. The former do not change during the model optimization, but the latter could be changed during the optimization process. Here is the example of the primitive computational graph which adds two numbers:</p>
+
+<div class="highlight highlight-source-python"><pre><span class="pl-k">from</span> pydeeptoy.computational_graph <span class="pl-k">import</span> <span class="pl-k">*</span>
+
+cg <span class="pl-k">=</span> ComputationalGraph()
+sum_result <span class="pl-k">=</span> cg.sum(cg.constant(<span class="pl-c1">1</span>), cg.constant(<span class="pl-c1">2</span>))</pre></div>
+
+<p>The code listed above builds the computational graph, but doesn't execute it. In order to execute the graph the <a href="../master/src/pydeeptoy/simulation.py">SimulationContext</a> class should be used. The simulation context has the logic for doing forward/backward propagation. In addition, it stores all computation results produced by each and every operation, including gradients obtained during the backward phase. The code executing the computational graph described above:</p>
+
+<div class="highlight highlight-source-python"><pre><span class="pl-k">from</span> pydeeptoy.computational_graph <span class="pl-k">import</span> <span class="pl-k">*</span>
+<span class="pl-k">from</span> pydeeptoy.simulation <span class="pl-k">import</span> <span class="pl-k">*</span>
+
+cg <span class="pl-k">=</span> ComputationalGraph()
+sum_result <span class="pl-k">=</span> cg.sum(cg.constant(<span class="pl-c1">1</span>), cg.constant(<span class="pl-c1">2</span>))
+
+ctx <span class="pl-k">=</span> SimulationContext()
+ctx.forward(cg)
+
+<span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>1+2=<span class="pl-c1">{}</span><span class="pl-pds">"</span></span>.format(ctx[sum_result].value))</pre></div>
+
+<h2>
+<a id="atomic-operations" class="anchor" href="#atomic-operations" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Atomic Operations</h2>
+
+<p>A computational graph is composed from a set of operations. An operation is the minimum building block of a computational graph. In the framework an operation is represented by the abstract <a href="../master/src/pydeeptoy/nodes.py">Node</a> class. All operation take an input in the form of a numpy array or a scalar value and produce either a scalar value or a numpy array. In other words, a computational graph passes a <a href="https://en.wikipedia.org/wiki/Tensor">tensor</a> through itself. That is why one of the most popular deep learning framework is called <a href="https://www.tensorflow.org">TensorFlow</a>. The following operations are implemented in the <a href="../master/src/pydeeptoy/computational_graph.py">computational_graph</a> module:</p>
+
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sum</td>
+<td>Computes the sum of two tensors.</td>
+</tr>
+<tr>
+<td>multiply</td>
+<td>Computes the product of two tensors.</td>
+</tr>
+<tr>
+<td>matrix_multiply</td>
+<td>Computes the product of two matrices (aka 2 dimensional tensors).</td>
+</tr>
+<tr>
+<td>div</td>
+<td>Divides one tensor by another.</td>
+</tr>
+<tr>
+<td>exp</td>
+<td>Calculate the exponential of all elements in the input tensor.</td>
+</tr>
+<tr>
+<td>log</td>
+<td>Natural logarithm, element-wise.</td>
+</tr>
+<tr>
+<td>reduce_sum</td>
+<td>Computes the sum of elements across dimensions of a tensor.</td>
+</tr>
+<tr>
+<td>max</td>
+<td>Element-wise maximum of tensor elements.</td>
+</tr>
+<tr>
+<td>broadcast</td>
+<td></td>
+</tr>
+<tr>
+<td>transpose</td>
+<td>Permute the dimensions of a tensor.</td>
+</tr>
+<tr>
+<td>reshape</td>
+<td>Gives a new shape to an array without changing its data.</td>
+</tr>
+<tr>
+<td>conv2d</td>
+<td>Computes a 2-D convolution given 4-D input and filter tensors.</td>
+</tr>
+</tbody>
+</table>
+
+<h2>
+<a id="activation-functions" class="anchor" href="#activation-functions" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Activation Functions</h2>
+
+<p><a href="https://en.wikipedia.org/wiki/Activation_function">Activation functions</a> are used for thresholding a single neuron output. First, a neuron calculates its output based on the weighted sum of its inputs. Second, the calculated weighted sum is fed into the activation function. Finally, the activation function produces the final neuron output. Usually, an activation function ouput is normalized to be in between 0 and 1, or -1 and 1. The list of implemented activation functions:</p>
+
+<ul>
+<li><a href="../master/src/pydeeptoy/activations.py">Relu</a></li>
+</ul>
+
+<h2>
+<a id="loss-functions" class="anchor" href="#loss-functions" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Loss Functions</h2>
+
+<p>Loss functions are used as a mesure of the model performance. Usually, it is just a scalar value telling how well a model estimates output based on the input. Needless to say, a universal loss function which fits all model flavours doesn't exists. The following loss functions are implemented in the <a href="../master/src/pydeeptoy/losses.py">losses</a> module:</p>
+
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Cross_entropy">Cross Entropy</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Hinge_loss">Hinge</a></li>
+</ul>
+
+<h2>
+<a id="computational-graph-visualization" class="anchor" href="#computational-graph-visualization" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Computational Graph Visualization</h2>
+
+<p>It is important to be able to visualize a complex computational graph. First, it helps to understand how a model works. Second, having a computational graph in the form of a visualization might help with debugging and finding an issue.</p>
+
+<p><a href="../master/src/examples/visualization/">The example</a> is demonstrating how to render a computational graph on the web page using <a href="http://d3js.org/">d3.js</a> library on the frontend and <a href="http://flask.pocoo.org">Flask</a> web framework on the backend. Interactive demo is <a href="http://quantumtunnel.xyz/comp_graph.html">here</a>. It renders computational graph of the 4-layer neural network:</p>
+
+<p><img src="https://raw.githubusercontent.com/stormy-ua/DeepLearningToy/master/comp_graph_visualization.png" alt="alt text"></p>
+
+<h2>
+<a id="usage-examples" class="anchor" href="#usage-examples" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage Examples</h2>
+
+<blockquote>
+<p>The set of primitive building blocks provided by the framework could be used to build robust estimators. The benefit of using the framework is that you do not have to implement forward/backward propagation from scratch for every kind of an estimator.</p>
+</blockquote>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Iris</th>
+<th>MNIST</th>
+<th>CIFAR-10</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Support Vector Machine (SVM)</td>
+<td><a href="../master/src/examples/iris_svm_classification.ipynb">Example</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Multilayer Perceptron</td>
+<td><a href="../master/src/examples/iris_2_layer_neural_network_classification.ipynb">Example</a></td>
+<td><a href="../master/src/examples/MNIST-multilayer-perceptron.ipynb">Example</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+<h2>
+<a id="license" class="anchor" href="#license" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>License</h2>
+
+<p><a href="http://opensource.org/licenses/mit-license.php">MIT license</a></p>
+      </section>
+      <footer>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
